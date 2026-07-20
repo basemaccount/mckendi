@@ -1,0 +1,37 @@
+{
+  "name": "mckendi-instant-coffee",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "render:logo": "node scripts/render-logo.mjs",
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "build:sitemap": "node scripts/build-sitemap.mjs",
+    "test:a11y": "node scripts/accessibility-check.mjs",
+    "test:bundle": "node scripts/bundle-budget.mjs",
+    "test:performance": "node scripts/performance-check.mjs",
+    "test:visual": "node scripts/visual-check.mjs",
+    "test:production": "node scripts/production-smoke.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.6.1",
+    "lucide-react": "^1.25.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@napi-rs/canvas": "^1.0.2",
+    "@playwright/test": "^1.61.1",
+    "@vitejs/plugin-react": "^6.0.3",
+    "pdfjs-dist": "^6.1.200",
+    "vite": "^8.1.5"
+  }
+}
