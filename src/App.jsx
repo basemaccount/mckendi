@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
+import ExperienceLayer from "./components/ExperienceLayer";
 
 const SITE_URL = String(import.meta.env.VITE_PUBLIC_SITE_URL || "https://mckendi.vercel.app").replace(/\/$/, "");
 const CONTACT_EMAIL = String(import.meta.env.VITE_CONTACT_EMAIL || "").trim();
@@ -133,7 +134,7 @@ function Header({ language, setLanguage, copy }) {
   useEffect(() => {
     const pageRegions = [document.querySelector("#main-content"), document.querySelector(".site-footer")].filter(Boolean);
     pageRegions.forEach((region) => { region.inert = open; });
-    if (!open && menuWasOpen.current) requestAnimationFrame(() => menuButton.current?.focus());
+    if (!open && menuWasOpen.current) menuButton.current?.focus();
     menuWasOpen.current = open;
     return () => pageRegions.forEach((region) => { region.inert = false; });
   }, [open]);
@@ -170,4 +171,4 @@ function Footer({language,copy}) { return <footer className="site-footer"><div c
 
 function NotFound({language}) { return <section className="section shell not-found"><span>404</span><h1>{language === "tr" ? "Bu sayfa bulunamadı." : "This page could not be found."}</h1><Link className="button button--dark" to="/">{language === "tr" ? "Ana sayfaya dön" : "Return home"}</Link></section>; }
 
-export default function App() { const [language,setLanguage] = useState(() => localStorage.getItem("mckendi-language") || "en"); const copy=text[language]||text.en; useEffect(()=>{document.documentElement.lang=language;localStorage.setItem("mckendi-language",language);},[language]); return <div className="app-shell"><a className="skip-link" href="#main-content">{language === "tr" ? "İçeriğe geç" : "Skip to content"}</a><ScrollManager/><Header language={language} setLanguage={setLanguage} copy={copy}/><main id="main-content"><Routes><Route path="/" element={<HomePage language={language} copy={copy}/>} /><Route path="/products" element={<ProductsPage language={language} copy={copy}/>} /><Route path="/products/:productId" element={<ProductPage language={language} copy={copy}/>} /><Route path="/process" element={<ProcessPage language={language} copy={copy}/>} /><Route path="/applications" element={<ApplicationsPage language={language}/>} /><Route path="/contact" element={<ContactPage language={language} copy={copy}/>} /><Route path="/privacy" element={<PrivacyPage language={language}/>} /><Route path="*" element={<NotFound language={language}/>} /></Routes></main><Footer language={language} copy={copy}/></div>; }
+export default function App() { const [language,setLanguage] = useState(() => localStorage.getItem("mckendi-language") || "en"); const copy=text[language]||text.en; useEffect(()=>{document.documentElement.lang=language;localStorage.setItem("mckendi-language",language);},[language]); return <div className="app-shell"><a className="skip-link" href="#main-content">{language === "tr" ? "İçeriğe geç" : "Skip to content"}</a><ScrollManager/><ExperienceLayer language={language}/><Header language={language} setLanguage={setLanguage} copy={copy}/><main id="main-content"><Routes><Route path="/" element={<HomePage language={language} copy={copy}/>} /><Route path="/products" element={<ProductsPage language={language} copy={copy}/>} /><Route path="/products/:productId" element={<ProductPage language={language} copy={copy}/>} /><Route path="/process" element={<ProcessPage language={language} copy={copy}/>} /><Route path="/applications" element={<ApplicationsPage language={language}/>} /><Route path="/contact" element={<ContactPage language={language} copy={copy}/>} /><Route path="/privacy" element={<PrivacyPage language={language}/>} /><Route path="*" element={<NotFound language={language}/>} /></Routes></main><Footer language={language} copy={copy}/></div>; }
