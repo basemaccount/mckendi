@@ -23,6 +23,7 @@ import {
 import { Navigate, Route, Routes, useLocation, useNavigationType, useParams } from "react-router-dom";
 import ExperienceLayer from "./components/ExperienceLayer";
 import FormatLab from "./components/FormatLab";
+import InquiryProgress from "./components/InquiryProgress";
 import { Link, NavLink } from "./components/TransitionLink";
 
 const SITE_URL = String(import.meta.env.VITE_PUBLIC_SITE_URL || "https://mckendi.vercel.app").replace(/\/$/, "");
@@ -134,10 +135,17 @@ function ScrollManager() {
       positions.current.set(currentKey.current, window.scrollY);
       ignoreScrollEvents.current = true;
     };
+    const restoreAfterCache = (event) => {
+      if (!event.persisted) return;
+      ignoreScrollEvents.current = false;
+      document.documentElement.classList.remove("is-restoring-scroll", "route-changing");
+      positions.current.set(currentKey.current, window.scrollY);
+    };
 
     window.history.scrollRestoration = "manual";
     window.addEventListener("scroll", rememberPosition, { passive: true });
     window.addEventListener("pagehide", rememberPosition);
+    window.addEventListener("pageshow", restoreAfterCache);
     window.addEventListener("popstate", rememberBeforeNavigation);
     window.addEventListener("app:before-navigation", rememberBeforeNavigation);
 
@@ -146,6 +154,7 @@ function ScrollManager() {
       window.history.scrollRestoration = previousRestoration;
       window.removeEventListener("scroll", rememberPosition);
       window.removeEventListener("pagehide", rememberPosition);
+      window.removeEventListener("pageshow", restoreAfterCache);
       window.removeEventListener("popstate", rememberBeforeNavigation);
       window.removeEventListener("app:before-navigation", rememberBeforeNavigation);
     };
@@ -157,8 +166,15 @@ function ScrollManager() {
     const top = Number.isFinite(savedPosition) ? savedPosition : 0;
     const root = document.documentElement;
     root.classList.add("is-restoring-scroll");
-    window.scrollTo({ top, left: 0, behavior: "instant" });
-    positions.current.set(location.key, top);
+    let settleFrame = 0;
+    let remainingSettleFrames = navigationType === "POP" ? 4 : 1;
+    const settlePosition = () => {
+      window.scrollTo({ top, left: 0, behavior: "instant" });
+      positions.current.set(location.key, top);
+      remainingSettleFrames -= 1;
+      if (remainingSettleFrames > 0) settleFrame = window.requestAnimationFrame(settlePosition);
+    };
+    settlePosition();
     const releaseTimer = window.setTimeout(() => {
       root.classList.remove("is-restoring-scroll");
       ignoreScrollEvents.current = false;
@@ -167,6 +183,7 @@ function ScrollManager() {
 
     return () => {
       window.clearTimeout(releaseTimer);
+      if (settleFrame) window.cancelAnimationFrame(settleFrame);
       root.classList.remove("is-restoring-scroll");
     };
   }, [location.key, navigationType]);
@@ -181,6 +198,7 @@ function Header({ language, setLanguage, copy }) {
   const menuButton = useRef(null);
   const menuWasOpen = useRef(false);
   useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => { const restoreFromCache = () => setOpen(false); window.addEventListener("app:pageshow", restoreFromCache); return () => window.removeEventListener("app:pageshow", restoreFromCache); }, []);
   useEffect(() => {
     const key = (event) => { if (event.key === "Escape") setOpen(false); };
     document.body.classList.toggle("no-scroll", open);
@@ -215,7 +233,31 @@ function ProcessPage({ language, copy }) { useMeta(language === "tr" ? "Çözün
 
 function ApplicationsPage({ language }) { useMeta(language === "tr" ? "Kullanım alanları — Mckendi" : "Applications — Mckendi", language === "tr" ? "Çözünebilir kahve formatları için bilgi amaçlı kullanım alanları." : "Informational application pathways for soluble coffee formats.", "/applications"); const items = language === "tr" ? [["Perakende sunumu", "Kavanoz, poşet ve tek porsiyon formatları için ürün yapısı ve paketleme gereksinimleri birlikte değerlendirilir."], ["Yiyecek-içecek hizmetleri", "Hazırlama yöntemi, dozaj, ekipman ve servis hızı hedef formatın seçiminde rol oynar."], ["Otomat ve içecek sistemleri", "Akış, dozlama, çözünme ve depolama davranışı gerçek sistemle test edilmelidir."], ["Gıda ve içecek bileşeni", "Tarif, proses, tat hedefi ve düzenleyici gereklilikler uygulamaya özel doğrulama gerektirir."]] : [["Retail presentation", "Product structure and packaging requirements are considered together for jars, pouches and single-serve formats."], ["Food service", "Preparation method, dose, equipment and service speed all influence the suitable format."], ["Vending and beverage systems", "Flow, dosing, dissolution and storage behaviour should be tested in the actual system."], ["Food and beverage ingredient", "Recipe, process, flavour target and regulatory requirements require application-specific validation."]]; return <><PageHero eyebrow={language === "tr" ? "Uygulama bağlamı" : "Application context"} title={language === "tr" ? "Format seçimi, kullanım amacıyla birlikte yapılır." : "Format selection belongs with the intended application."} copy={language === "tr" ? "Bu alanlar ürün uygunluğu iddiası değil, ilk teknik görüşmeyi yönlendiren bilgi başlıklarıdır." : "These pathways are not suitability claims; they are information prompts for the first technical discussion."} marker={language === "tr" ? "Bilgi" : "Inform"} /><section className="section shell"><div className="application-grid">{items.map(([title, description], index) => <article key={title}><span>0{index + 1}</span>{[PackageCheck, Coffee, Factory, Sparkles].map((Icon, iconIndex) => iconIndex === index && <Icon key={title} aria-hidden="true" />)}<h2>{title}</h2><p>{description}</p></article>)}</div></section><section className="section section--green"><div className="shell application-questions"><div><p className="eyebrow eyebrow--gold">{language === "tr" ? "Talep öncesi" : "Before the inquiry"}</p><h2>{language === "tr" ? "Beş soruyla başlayın." : "Start with five questions."}</h2></div><ol><li>{language === "tr" ? "Hangi ürün veya içecek geliştiriliyor?" : "What product or beverage is being developed?"}</li><li>{language === "tr" ? "Hedeflenen kahve karakteri nedir?" : "What coffee character is intended?"}</li><li>{language === "tr" ? "Hazırlama veya üretim sistemi nedir?" : "What is the preparation or production system?"}</li><li>{language === "tr" ? "Hedef pazar ve tahmini hacim nedir?" : "What is the target market and indicative volume?"}</li><li>{language === "tr" ? "Hangi belgeler ve paketleme biçimi gereklidir?" : "What documentation and packaging route is required?"}</li></ol></div></section></>; }
 
-function InquiryForm({ language, copy }) { const [state,setState] = useState({status:"idle",message:""}); const params = new URLSearchParams(useLocation().search); const selected = params.get("product") || ""; const submit = async (event) => { event.preventDefault(); const form=event.currentTarget; const data=new FormData(form); setState({status:"sending",message:""}); try { const response=await fetch("/api/inquiries",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({name:data.get("name"),company:data.get("company"),email:data.get("email"),market:data.get("market"),product:data.get("product"),application:data.get("application"),volume:data.get("volume"),message:data.get("message"),consent:data.get("consent")==="on",website:data.get("website")||"",language})}); if(!response.ok) throw new Error(); form.reset(); setState({status:"success",message:copy.form.success}); } catch { setState({status:"error",message:copy.form.error}); } }; return <form className="inquiry-form" onSubmit={submit}><div className="form-grid"><label><span>{copy.form.name}</span><input name="name" autoComplete="name" minLength="2" maxLength="80" required /></label><label><span>{copy.form.company}</span><input name="company" autoComplete="organization" minLength="2" maxLength="120" required /></label><label><span>{copy.form.email}</span><input name="email" type="email" autoComplete="email" maxLength="160" required /></label><label><span>{copy.form.market}</span><input name="market" autoComplete="country-name" maxLength="100" required /></label><label><span>{copy.form.product}</span><select name="product" defaultValue={formats.some(({id})=>id===selected) ? selected : ""} required><option value="" disabled>{language === "tr" ? "Bir format seçin" : "Choose a format"}</option>{formats.map((format)=><option value={format.id} key={format.id}>{local(format.name,language)}</option>)}</select></label><label><span>{copy.form.application}</span><input name="application" maxLength="120" required /></label><label className="form-grid__wide"><span>{copy.form.volume}</span><input name="volume" maxLength="80" /></label><label className="form-grid__wide"><span>{copy.form.message}</span><textarea name="message" minLength="10" maxLength="2500" rows="6" required /></label><label className="consent-field form-grid__wide"><input name="consent" type="checkbox" required /><span>{copy.form.consent} <Link to="/privacy">{language === "tr" ? "Gizlilik" : "Privacy"}</Link></span></label><label className="bot-field" aria-hidden="true">Website<input name="website" tabIndex="-1" autoComplete="off" /></label></div><div className="form-submit"><button className="button button--gold" type="submit" disabled={state.status==="sending"}>{state.status==="sending" ? copy.form.sending : copy.form.submit}<Send aria-hidden="true" /></button>{state.message && <p className={`form-status is-${state.status}`} role="status">{state.message}</p>}</div></form>; }
+function InquiryForm({ language, copy }) {
+  const [state, setState] = useState({ status: "idle", message: "" });
+  const formRef = useRef(null);
+  const params = new URLSearchParams(useLocation().search);
+  const selected = params.get("product") || "";
+  const submit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setState({ status: "sending", message: "" });
+    try {
+      const response = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ name: data.get("name"), company: data.get("company"), email: data.get("email"), market: data.get("market"), product: data.get("product"), application: data.get("application"), volume: data.get("volume"), message: data.get("message"), consent: data.get("consent") === "on", website: data.get("website") || "", language }),
+      });
+      if (!response.ok) throw new Error();
+      form.reset();
+      setState({ status: "success", message: copy.form.success });
+    } catch {
+      setState({ status: "error", message: copy.form.error });
+    }
+  };
+  return <form ref={formRef} className="inquiry-form" onSubmit={submit} aria-busy={state.status === "sending"}><InquiryProgress formRef={formRef} language={language} /><div className="form-grid"><label><span>{copy.form.name}</span><input name="name" autoComplete="name" minLength="2" maxLength="80" required /></label><label><span>{copy.form.company}</span><input name="company" autoComplete="organization" minLength="2" maxLength="120" required /></label><label><span>{copy.form.email}</span><input name="email" type="email" autoComplete="email" maxLength="160" required /></label><label><span>{copy.form.market}</span><input name="market" autoComplete="country-name" maxLength="100" required /></label><label><span>{copy.form.product}</span><select name="product" defaultValue={formats.some(({ id }) => id === selected) ? selected : ""} required><option value="" disabled>{language === "tr" ? "Bir format seçin" : "Choose a format"}</option>{formats.map((format) => <option value={format.id} key={format.id}>{local(format.name, language)}</option>)}</select></label><label><span>{copy.form.application}</span><input name="application" maxLength="120" required /></label><label className="form-grid__wide"><span>{copy.form.volume}</span><input name="volume" maxLength="80" /></label><label className="form-grid__wide"><span>{copy.form.message}</span><textarea name="message" minLength="10" maxLength="2500" rows="6" required /></label><label className="consent-field form-grid__wide"><input name="consent" type="checkbox" required /><span>{copy.form.consent} <Link to="/privacy">{language === "tr" ? "Gizlilik" : "Privacy"}</Link></span></label><label className="bot-field" aria-hidden="true">Website<input name="website" tabIndex="-1" autoComplete="off" /></label></div><div className="form-submit"><button className="button button--gold" type="submit" disabled={state.status === "sending"}>{state.status === "sending" ? copy.form.sending : copy.form.submit}<Send aria-hidden="true" /></button>{state.message && <p className={`form-status is-${state.status}`} role="status">{state.message}</p>}</div></form>;
+}
 
 function ContactPage({ language, copy }) { useMeta(language === "tr" ? "İletişim ve ürün talebi — Mckendi" : "Contact and product inquiry — Mckendi", language === "tr" ? "Mckendi çözünebilir kahve ürün talebi gönderin." : "Send a Mckendi soluble coffee product inquiry.", "/contact"); return <><PageHero eyebrow={language === "tr" ? "İletişim" : "Contact"} title={language === "tr" ? "Talebinizi form üzerinden paylaşın." : "Share your inquiry through the form."} copy={language === "tr" ? "Ürün formatı, uygulama, pazar ve yaklaşık hacim, doğru takibin temelini oluşturur." : "Product format, application, market and indicative volume create the basis for the right follow-up."} marker={language === "tr" ? "İnsan desteği" : "Human follow-up"} /><section className="section shell contact-layout"><aside><div className="contact-card"><Mail aria-hidden="true" /><p className="eyebrow eyebrow--gold">{language === "tr" ? "İletişim yolu" : "Contact pathway"}</p><h2>{language === "tr" ? "Önce formu doldurun." : "Begin with the form."}</h2><p>{language === "tr" ? "Mckendi iletişim e-postası ve telefon bilgisi işletme sahibi tarafından teyit edildikten sonra yayımlanacaktır." : "Mckendi’s public email and phone details will be published after confirmation by the business owner."}</p>{CONTACT_EMAIL && <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>}</div><div className="contact-note"><FileCheck2 aria-hidden="true" /><p>{language === "tr" ? "Form şu anda güvenli kayıt yapılandırmasına bağlıdır; teslimat ayrıntıları yayından önce doğrulanacaktır." : "The form is connected to protected submission storage; delivery details will be verified before public launch."}</p></div></aside><div className="form-panel"><p className="eyebrow">{copy.form.eyebrow}</p><h2>{copy.form.title}</h2><p>{copy.form.copy}</p><InquiryForm language={language} copy={copy} /></div></section></>; }
 
