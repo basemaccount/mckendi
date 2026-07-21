@@ -464,7 +464,7 @@ p { text-wrap: pretty; }
   .section { padding-block: 62px; }
   .site-header { gap: 10px; padding-inline: 17px; }
   .header-actions { gap: 7px; }
-  .language-switcher button { width: 34px; }
+  .language-switcher button { width: 44px; min-height: 44px; }
   .mobile-navigation { padding-inline: 17px; }
   .mobile-navigation nav a { font-size: 29px; }
   .hero__grid { gap: 36px; padding-block: 52px 57px; }
@@ -512,6 +512,7 @@ p { text-wrap: pretty; }
   .footer-lead { align-items: start; flex-direction: column; }
   .footer-lead h2 { font-size: 42px; }
   .footer-grid { grid-template-columns: 1fr; gap: 34px; }
+  .footer-grid a, .footer-grid span { min-height: 44px; }
   .footer-base { flex-direction: column; gap: 10px; }
 }
 

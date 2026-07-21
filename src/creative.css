@@ -1,7 +1,7 @@
 @supports (view-transition-name: page-content) {
   main { view-transition-name: page-content; }
   .site-header { view-transition-name: site-header; }
-  .scroll-progress, .back-to-top, .mobile-navigation { view-transition-name: none; }
+  .route-loader, .scroll-progress, .back-to-top, .mobile-navigation { view-transition-name: none; }
 
   ::view-transition-group(*) {
     animation-duration: 480ms;
@@ -84,6 +84,7 @@
 
 .format-lab__workspace {
   --lab-accent: var(--red);
+  position: relative;
   display: grid;
   grid-template-columns: minmax(200px, 0.5fr) minmax(360px, 1.08fr) minmax(320px, 0.82fr);
   align-items: stretch;
@@ -122,6 +123,23 @@
 .format-lab__controls button.is-active { border-color: color-mix(in srgb, var(--lab-accent), white 20%); background: color-mix(in srgb, var(--lab-accent) 20%, transparent); }
 .format-lab__controls button.is-active::before { opacity: 1; transform: scaleY(1); }
 .format-lab__controls button.is-active > svg { transform: rotate(-8deg) scale(1.12); }
+.format-lab__controls button.is-pending { cursor: progress; }
+.format-lab__controls button.is-pending strong,
+.format-lab__controls button.is-pending small { opacity: 0.62; }
+.format-lab__control-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--lab-accent);
+  border-right-color: transparent;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.format-lab__controls button.is-pending .format-lab__control-status { opacity: 0.82; animation: lab-loading-spin 680ms linear infinite; }
+.format-lab__swipe-cue { display: none; }
 
 .format-lab__visual {
   position: relative;
@@ -182,6 +200,15 @@
   to { opacity: 1; transform: none; }
 }
 
+@keyframes lab-loading-spin {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes lab-swipe-cue {
+  0%, 100% { opacity: 0.52; transform: translateX(-4px) rotate(-45deg); }
+  50% { opacity: 1; transform: translateX(3px) rotate(-45deg); }
+}
+
 @keyframes page-dissolve-out {
   to { opacity: 0; transform: translateY(-8px); }
 }
@@ -208,7 +235,7 @@
   .format-lab__intro { grid-template-columns: 76px 1fr; gap: 12px; }
   .format-lab__intro p { font-size: 13px; }
   .format-lab__workspace { display: flex; flex-direction: column; gap: 14px; }
-  .format-lab__controls { order: 1; display: flex; gap: 8px; padding-bottom: 8px; overflow-x: auto; scroll-padding-inline: 2px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .format-lab__controls { order: 1; display: flex; gap: 8px; padding: 0 34px 8px 0; overflow-x: auto; overscroll-behavior-inline: contain; scroll-padding-inline: 2px 34px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .format-lab__controls::-webkit-scrollbar { display: none; }
   .format-lab__controls button { min-width: 188px; min-height: 88px; flex: 0 0 auto; scroll-snap-align: start; }
   .format-lab__controls button:hover { transform: none; }
@@ -221,11 +248,14 @@
   .format-lab__readout dl { margin-top: 24px; }
   .format-lab__readout > .button { width: 100%; }
   .material-lens { display: none; }
+  .format-lab__swipe-cue { position: absolute; z-index: 8; top: 31px; right: -1px; width: 31px; height: 31px; display: grid; place-items: center; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 50%; background: rgba(16, 47, 38, 0.9); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2); pointer-events: none; backdrop-filter: blur(8px); }
+  .format-lab__swipe-cue::after { width: 8px; height: 8px; border-right: 2px solid var(--gold-light); border-bottom: 2px solid var(--gold-light); content: ""; animation: lab-swipe-cue 1.35s var(--ease) infinite; }
+  .format-lab__specimen { animation: lab-readout-in 480ms 100ms var(--ease) both; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   [data-optical] > img { translate: none !important; }
   .material-lens { display: none; }
-  .format-lab__visual > img, .format-lab__readout { animation: none !important; }
+  .format-lab__visual > img, .format-lab__readout, .format-lab__specimen, .format-lab__control-status, .format-lab__swipe-cue::after { animation: none !important; }
 }

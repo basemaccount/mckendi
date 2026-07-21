@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -20,38 +20,13 @@ import {
   Wind,
   X,
 } from "lucide-react";
-import { Link as RouterLink, NavLink as RouterNavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigationType, useParams } from "react-router-dom";
 import ExperienceLayer from "./components/ExperienceLayer";
 import FormatLab from "./components/FormatLab";
+import { Link, NavLink } from "./components/TransitionLink";
 
 const SITE_URL = String(import.meta.env.VITE_PUBLIC_SITE_URL || "https://mckendi.vercel.app").replace(/\/$/, "");
 const CONTACT_EMAIL = String(import.meta.env.VITE_CONTACT_EMAIL || "").trim();
-
-function useTransitionClick({ to, onClick, target, replace, state, preventScrollReset, relative }) {
-  const navigate = useNavigate();
-  return (event) => {
-    onClick?.(event);
-    const shouldNavigate = !event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && (!target || target === "_self");
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!shouldNavigate || reduceMotion || !document.startViewTransition) return;
-
-    event.preventDefault();
-    document.startViewTransition(() => {
-      navigate(to, { replace, state, preventScrollReset, relative, flushSync: true });
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }).finished.catch(() => {});
-  };
-}
-
-function Link({ to, onClick, target, replace, state, preventScrollReset, relative, ...props }) {
-  const handleClick = useTransitionClick({ to, onClick, target, replace, state, preventScrollReset, relative });
-  return <RouterLink {...props} to={to} target={target} replace={replace} state={state} preventScrollReset={preventScrollReset} relative={relative} onClick={handleClick} />;
-}
-
-function NavLink({ to, onClick, target, replace, state, preventScrollReset, relative, ...props }) {
-  const handleClick = useTransitionClick({ to, onClick, target, replace, state, preventScrollReset, relative });
-  return <RouterNavLink {...props} to={to} target={target} replace={replace} state={state} preventScrollReset={preventScrollReset} relative={relative} onClick={handleClick} />;
-}
 
 const text = {
   en: {
@@ -143,7 +118,61 @@ const formats = [
 function local(value, language) { return typeof value === "object" ? value[language] : value; }
 function useMeta(title, description, path = "/") { useEffect(() => { document.title = title; document.querySelector('meta[name="description"]')?.setAttribute("content", description); document.querySelector('link[rel="canonical"]')?.setAttribute("href", `${SITE_URL}${path}`); }, [description, path, title]); }
 
-function ScrollManager() { const { pathname } = useLocation(); useEffect(() => window.scrollTo({ top: 0, behavior: "instant" }), [pathname]); return null; }
+function ScrollManager() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const positions = useRef(new Map());
+  const currentKey = useRef(location.key);
+  const ignoreScrollEvents = useRef(false);
+
+  useEffect(() => {
+    const previousRestoration = window.history.scrollRestoration;
+    const rememberPosition = () => {
+      if (!ignoreScrollEvents.current) positions.current.set(currentKey.current, window.scrollY);
+    };
+    const rememberBeforeNavigation = () => {
+      positions.current.set(currentKey.current, window.scrollY);
+      ignoreScrollEvents.current = true;
+    };
+
+    window.history.scrollRestoration = "manual";
+    window.addEventListener("scroll", rememberPosition, { passive: true });
+    window.addEventListener("pagehide", rememberPosition);
+    window.addEventListener("popstate", rememberBeforeNavigation);
+    window.addEventListener("app:before-navigation", rememberBeforeNavigation);
+
+    return () => {
+      positions.current.set(currentKey.current, window.scrollY);
+      window.history.scrollRestoration = previousRestoration;
+      window.removeEventListener("scroll", rememberPosition);
+      window.removeEventListener("pagehide", rememberPosition);
+      window.removeEventListener("popstate", rememberBeforeNavigation);
+      window.removeEventListener("app:before-navigation", rememberBeforeNavigation);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    currentKey.current = location.key;
+    const savedPosition = navigationType === "POP" ? positions.current.get(location.key) : 0;
+    const top = Number.isFinite(savedPosition) ? savedPosition : 0;
+    const root = document.documentElement;
+    root.classList.add("is-restoring-scroll");
+    window.scrollTo({ top, left: 0, behavior: "auto" });
+    positions.current.set(location.key, top);
+    const releaseTimer = window.setTimeout(() => {
+      root.classList.remove("is-restoring-scroll");
+      ignoreScrollEvents.current = false;
+      positions.current.set(currentKey.current, window.scrollY);
+    }, 700);
+
+    return () => {
+      window.clearTimeout(releaseTimer);
+      root.classList.remove("is-restoring-scroll");
+    };
+  }, [location.key, navigationType]);
+
+  return null;
+}
 
 function Header({ language, setLanguage, copy }) {
   const [open, setOpen] = useState(false);
