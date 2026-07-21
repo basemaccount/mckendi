@@ -44,6 +44,15 @@ const modifierPrevented = await page.locator('.desktop-nav a[href="/products"]')
 });
 assert(modifierPrevented === false, "modified click was captured by application navigation");
 
+await page.goto(`${baseUrl}/products`, { waitUntil: "networkidle" });
+await page.evaluate(() => window.scrollTo(0, 520));
+const sameRouteHistoryLength = await page.evaluate(() => history.length);
+await page.locator('.desktop-nav a[href="/products"]').click();
+await page.waitForTimeout(850);
+assert(await page.evaluate(() => scrollY) === 0, "current-route navigation did not return to the top");
+assert(await page.evaluate(() => history.length) === sameRouteHistoryLength, "current-route navigation added a duplicate history entry");
+assert(!await page.locator("html.route-changing").count(), "current-route navigation started a redundant page transition");
+
 for (let index = 0; index < 15; index += 1) {
   const target = rapidTargets[index % rapidTargets.length];
   await page.evaluate((href) => document.querySelector(`.desktop-nav a[href="${href}"]`)?.click(), target);
@@ -103,6 +112,20 @@ await page.locator(".format-lab__visual").evaluate((element) => Object.definePro
 await labButtons.first().click();
 await page.waitForFunction(() => document.querySelector('.format-lab__workspace')?.getAttribute('aria-busy') === 'false');
 assert(await labButtons.first().getAttribute("aria-pressed") === "true", "lab did not recover from a scoped transition failure");
+
+await page.reload({ waitUntil: "networkidle" });
+await page.locator(".format-lab").scrollIntoViewIfNeeded();
+await page.evaluate(() => {
+  window.Image = class FailingPreloadImage {
+    set sizes(value) { this._sizes = value; }
+    set srcset(value) { this._srcset = value; }
+    set src(value) { this._src = value; queueMicrotask(() => this.onerror?.(new Event("error"))); }
+  };
+});
+const fallbackLabButtons = page.locator(".format-lab__controls button");
+await fallbackLabButtons.nth(1).click();
+await page.waitForFunction(() => document.querySelector('.format-lab__workspace')?.getAttribute('aria-busy') === 'false');
+assert(await fallbackLabButtons.nth(1).getAttribute("aria-pressed") === "true", "lab left a click pending after image preloading failed");
 
 await page.goto(`${baseUrl}/contact`, { waitUntil: "networkidle" });
 const inquiryProgress = page.locator(".inquiry-progress__meter");
@@ -201,6 +224,31 @@ assert(await stallPage.evaluate(() => window.__skipped) === 1, "stalled transiti
 assert(!await stallPage.locator("html.route-changing").count(), "stalled transition left the document locked");
 await stallContext.close();
 
+const storageSyncContext = await browser.newContext({ viewport: { width: 1024, height: 800 } });
+await storageSyncContext.addInitScript(() => {
+  window.__storageEvents = 0;
+  window.addEventListener("storage", () => { window.__storageEvents += 1; });
+});
+const storageSourcePage = await storageSyncContext.newPage();
+const storageMirrorPage = await storageSyncContext.newPage();
+await Promise.all([storageSourcePage.goto(baseUrl, { waitUntil: "networkidle" }), storageMirrorPage.goto(baseUrl, { waitUntil: "networkidle" })]);
+await storageSourcePage.locator('.language-switcher button').nth(1).click();
+await storageMirrorPage.waitForFunction(() => document.documentElement.lang === "tr");
+assert(await storageSourcePage.evaluate(() => window.__storageEvents) + await storageMirrorPage.evaluate(() => window.__storageEvents) <= 2, "language storage synchronization echoed between tabs");
+await storageSyncContext.close();
+
+const blockedStorageContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+await blockedStorageContext.addInitScript(() => {
+  Storage.prototype.getItem = () => { throw new DOMException("Storage blocked", "SecurityError"); };
+  Storage.prototype.setItem = () => { throw new DOMException("Storage blocked", "SecurityError"); };
+});
+const blockedStoragePage = await blockedStorageContext.newPage();
+await blockedStoragePage.goto(baseUrl, { waitUntil: "networkidle" });
+assert(await blockedStoragePage.locator("h1").count() === 1, "blocked browser storage prevented the application from loading");
+await blockedStoragePage.locator('.language-switcher button').nth(1).click();
+assert(await blockedStoragePage.locator("html").getAttribute("lang") === "tr", "blocked browser storage prevented an in-memory language change");
+await blockedStorageContext.close();
+
 assert(runtimeErrors.length === 0, `runtime errors: ${runtimeErrors.join(" | ")}`);
 await browser.close();
 
@@ -209,5 +257,5 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exitCode = 1;
 } else {
-  console.log(`Interaction checks passed: ${routes.length} direct loads/reloads, keyboard and modified clicks, rapid navigation, deep history restoration, deferred rendering, responsive chapters, inquiry readiness, BFCache/offline recovery, reduced motion, lab interruption safety, mobile touch targets, and transition failure recovery.`);
+  console.log(`Interaction checks passed: ${routes.length} direct loads/reloads, keyboard, modified and current-route clicks, rapid navigation, deep history restoration, deferred rendering, responsive chapters, inquiry readiness, BFCache/offline/storage recovery, reduced motion, lab preload/interruption safety, mobile touch targets, and transition failure recovery.`);
 }

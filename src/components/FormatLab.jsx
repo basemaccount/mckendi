@@ -10,6 +10,7 @@ export default function FormatLab({ formats, language, reference, LinkComponent 
   const [pendingId, setPendingId] = useState(null);
   const imageCache = useRef(new Map());
   const selectionRequest = useRef(0);
+  const selectionTimer = useRef(0);
   const mounted = useRef(true);
   const visual = useRef(null);
   const activeIndex = Math.max(0, formats.findIndex(({ id }) => id === activeId));
@@ -20,6 +21,7 @@ export default function FormatLab({ formats, language, reference, LinkComponent 
     return () => {
       mounted.current = false;
       selectionRequest.current += 1;
+      window.clearTimeout(selectionTimer.current);
     };
   }, []);
 
@@ -53,9 +55,14 @@ export default function FormatLab({ formats, language, reference, LinkComponent 
     if (format.id === active.id) return;
     const request = ++selectionRequest.current;
     setPendingId(format.id);
-    warmFormat(format)
+    window.clearTimeout(selectionTimer.current);
+    const deadline = new Promise((resolve) => {
+      selectionTimer.current = window.setTimeout(resolve, 900);
+    });
+    Promise.race([warmFormat(format).catch(() => undefined), deadline])
       .then(() => {
         if (!mounted.current || request !== selectionRequest.current) return;
+        window.clearTimeout(selectionTimer.current);
         let committed = false;
         const commitSelection = () => {
           if (committed || !mounted.current || request !== selectionRequest.current) return;
@@ -106,7 +113,7 @@ export default function FormatLab({ formats, language, reference, LinkComponent 
             {formats.map((format) => {
               const Icon = format.icon;
               return (
-                <button key={format.id} className={`${format.id === active.id ? "is-active" : ""} ${format.id === pendingId ? "is-pending" : ""}`.trim()} type="button" aria-pressed={format.id === active.id} onPointerEnter={() => warmFormat(format).catch(() => {})} onFocus={() => warmFormat(format).catch(() => {})} onTouchStart={() => warmFormat(format).catch(() => {})} onClick={() => selectFormat(format)}>
+                <button key={format.id} className={`${format.id === active.id ? "is-active" : ""} ${format.id === pendingId ? "is-pending" : ""}`.trim()} type="button" aria-pressed={format.id === (pendingId || active.id)} aria-busy={format.id === pendingId} onPointerEnter={() => warmFormat(format).catch(() => {})} onFocus={() => warmFormat(format).catch(() => {})} onTouchStart={() => warmFormat(format).catch(() => {})} onClick={() => selectFormat(format)}>
                   <span>{format.number}</span>
                   <Icon aria-hidden="true" />
                   <strong>{local(format.short, language)}</strong>
