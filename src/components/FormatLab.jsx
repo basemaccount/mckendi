@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { ArrowRight, Coffee, Factory } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -10,6 +11,7 @@ export default function FormatLab({ formats, language, reference, LinkComponent 
   const imageCache = useRef(new Map());
   const selectionRequest = useRef(0);
   const mounted = useRef(true);
+  const visual = useRef(null);
   const activeIndex = Math.max(0, formats.findIndex(({ id }) => id === activeId));
   const active = formats[activeIndex] || formats[0];
 
@@ -54,8 +56,31 @@ export default function FormatLab({ formats, language, reference, LinkComponent 
     warmFormat(format)
       .then(() => {
         if (!mounted.current || request !== selectionRequest.current) return;
-        setActiveId(format.id);
-        setPendingId(null);
+        let committed = false;
+        const commitSelection = () => {
+          if (committed || !mounted.current || request !== selectionRequest.current) return;
+          committed = true;
+          setActiveId(format.id);
+          setPendingId(null);
+        };
+        const transitionRoot = visual.current;
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        if (!reduceMotion && typeof transitionRoot?.startViewTransition === "function") {
+          try {
+            transitionRoot.activeViewTransition?.skipTransition?.();
+            const transition = transitionRoot.startViewTransition(() => flushSync(commitSelection));
+            transition?.ready?.catch(() => {});
+            transition?.updateCallbackDone?.catch(() => {});
+            transition?.finished?.catch(() => {});
+            return;
+          } catch {
+            commitSelection();
+            return;
+          }
+        }
+
+        commitSelection();
       })
       .catch(() => {
         if (mounted.current && request === selectionRequest.current) setPendingId(null);
@@ -93,7 +118,7 @@ export default function FormatLab({ formats, language, reference, LinkComponent 
           </div>
           <span className="format-lab__swipe-cue" aria-hidden="true" />
 
-          <div className="format-lab__visual" data-optical>
+          <div ref={visual} className="format-lab__visual" data-optical>
             <div className="format-lab__orbit" aria-hidden="true"><span /><span /><span /></div>
             <img key={active.id} src={active.image} srcSet={active.srcSet} sizes="(max-width: 760px) calc(100vw - 34px), 43vw" alt={local(active.alt, language)} width="960" height="960" loading="lazy" decoding="async" />
             <span className="material-lens" aria-hidden="true"><ActiveIcon /></span>
