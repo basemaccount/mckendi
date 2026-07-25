@@ -44,6 +44,9 @@ for (const check of checks) {
   if (errors.length) failures.push(`${check.name}: ${errors.join(" | ")}`);
 
   if (check.name === "desktop-home") {
+    const brandLockup = page.locator(".brand-lockup").first();
+    if (!(await brandLockup.isVisible()) || !(await brandLockup.textContent())?.includes("Makendi.coffee")) failures.push("desktop-home: Makendi.coffee brand lockup was missing");
+    if ((await page.getByText(/Mckendi/i).count()) !== 0) failures.push("desktop-home: retired Mckendi spelling remained visible");
     if ((await page.locator(".image-disclosure, .hero__image-note").count()) !== 4) failures.push("desktop-home: temporary AI images were not fully disclosed");
     const englishHeading = await page.locator("h1").textContent();
     await page.getByRole("button", { name: "TR" }).click();
@@ -62,6 +65,9 @@ for (const check of checks) {
   if (check.name === "mobile-contact") {
     if ((await page.locator(".inquiry-form input[required], .inquiry-form select[required], .inquiry-form textarea[required]").count()) < 8) failures.push("mobile-contact: required inquiry fields missing");
     if (!(await page.locator('.inquiry-form input[name="consent"]').getAttribute("required") !== null)) failures.push("mobile-contact: privacy consent not required");
+    if (!(await page.locator('a[href="mailto:info@makendi.com"]').first().isVisible())) failures.push("mobile-contact: direct email channel was missing");
+    if (!(await page.locator('a[href="tel:+902163407028"]').first().isVisible())) failures.push("mobile-contact: direct phone channel was missing");
+    if (!(await page.getByText("www.makendi.coffee", { exact: true }).first().isVisible())) failures.push("mobile-contact: planned Makendi domain was missing");
   }
   console.log(`${check.name}: ${audit.clientWidth}x${check.height}, scrollWidth=${audit.scrollWidth}, title="${audit.title}"`);
   await context.close();

@@ -128,6 +128,11 @@ await page.waitForFunction(() => document.querySelector('.format-lab__workspace'
 assert(await fallbackLabButtons.nth(1).getAttribute("aria-pressed") === "true", "lab left a click pending after image preloading failed");
 
 await page.goto(`${baseUrl}/contact`, { waitUntil: "networkidle" });
+assert((await page.locator(".brand-lockup").first().textContent()).includes("Makendi.coffee"), "new Makendi.coffee brand was not visible in the persistent shell");
+assert((await page.title()).includes("Makendi.coffee"), "contact metadata retained the old brand name");
+assert(await page.locator('.contact-channels a[href="mailto:info@makendi.com"]').count() === 1, "confirmed contact email was not published");
+assert(await page.locator('.contact-channels a[href="tel:+902163407028"]').count() === 1, "confirmed contact telephone was not callable");
+assert((await page.locator(".contact-channels").textContent()).includes("www.makendi.coffee"), "confirmed Makendi.coffee website was not published");
 const inquiryProgress = page.locator(".inquiry-progress__meter");
 assert(await inquiryProgress.getAttribute("aria-valuemax") === "8", "inquiry readiness did not identify the eight required fields");
 await page.locator('[name="name"]').fill("Test Person");
@@ -140,6 +145,12 @@ await page.locator('[name="message"]').fill("A complete test instant coffee brie
 await page.locator('[name="consent"]').check();
 await page.waitForFunction(() => document.querySelector(".inquiry-progress__meter")?.getAttribute("aria-valuenow") === "8");
 assert(await page.locator(".inquiry-progress.is-ready").count() === 1, "completed inquiry did not expose its ready state");
+await page.route("**/api/inquiries", (route) => route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true, reference: "MKI-TEST" }) }));
+await page.locator('.inquiry-form button[type="submit"]').click();
+await page.locator(".inquiry-fallback").waitFor();
+assert((await page.locator('.inquiry-fallback a[href^="mailto:"]').getAttribute("href")).includes("Makendi.coffee"), "stored inquiry did not preserve a prepared email fallback");
+assert(await page.locator('.inquiry-fallback a[href="tel:+902163407028"]').count() === 1, "stored inquiry did not preserve the telephone fallback");
+await page.unroute("**/api/inquiries");
 
 await context.close();
 
