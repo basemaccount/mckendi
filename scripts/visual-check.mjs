@@ -56,6 +56,13 @@ for (const check of checks) {
     if ((await page.locator("html").getAttribute("lang")) !== "tr") failures.push("desktop-home: document language did not change");
   }
   if (check.name === "mobile-home") {
+    const heroMediaTop = await page.locator(".hero__media").evaluate((element) => element.getBoundingClientRect().top);
+    if (heroMediaTop >= check.height) failures.push(`mobile-home: product photography began below the first viewport at ${Math.round(heroMediaTop)}px`);
+    const productMedia = await page.locator(".product-card__media").evaluateAll((elements) => elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    }));
+    if (productMedia.some(({ width, height }) => height > width + 2)) failures.push("mobile-home: a product-card image exceeded its intended compact aspect ratio");
     const menu = page.getByRole("button", { name: "Open navigation" });
     await menu.click();
     if (!(await page.getByRole("navigation", { name: "Mobile navigation" }).isVisible())) failures.push("mobile-home: navigation did not open");
@@ -63,6 +70,27 @@ for (const check of checks) {
     if (!(await page.locator("#mobile-navigation a").first().evaluate((element) => document.activeElement === element))) failures.push("mobile-home: focus did not enter menu");
     await page.keyboard.press("Escape");
     if (!(await menu.evaluate((element) => document.activeElement === element))) failures.push("mobile-home: focus did not return to menu trigger");
+  }
+  if (check.name === "mobile-products") {
+    const pageHero = await page.locator(".page-hero").evaluate((element) => element.getBoundingClientRect().height);
+    if (pageHero > check.height * 0.72) failures.push(`mobile-products: page hero consumed ${Math.round(pageHero)}px`);
+  }
+  if (check.name === "mobile-freeze") {
+    const productLayout = await page.locator(".product-detail__grid").evaluate((element) => {
+      const copy = element.querySelector(".product-detail__copy").getBoundingClientRect();
+      const media = element.querySelector(".product-detail__media").getBoundingClientRect();
+      const heading = element.querySelector("h1").getBoundingClientRect();
+      return {
+        copyTop: copy.top,
+        mediaTop: media.top,
+        mediaHeight: media.height,
+        headingBottom: heading.bottom,
+        viewportHeight: innerHeight,
+      };
+    });
+    if (productLayout.copyTop >= productLayout.mediaTop) failures.push("mobile-freeze: product information did not precede product photography");
+    if (productLayout.headingBottom > productLayout.viewportHeight) failures.push("mobile-freeze: product name was not visible in the first viewport");
+    if (productLayout.mediaHeight > productLayout.viewportHeight * 0.62) failures.push("mobile-freeze: product photography was taller than the mobile reading window");
   }
   if (check.name === "mobile-contact") {
     if ((await page.locator(".inquiry-form input[required], .inquiry-form select[required], .inquiry-form textarea[required]").count()) < 8) failures.push("mobile-contact: required inquiry fields missing");

@@ -82,6 +82,11 @@ await page.waitForURL((url) => url.pathname === "/");
 await page.waitForTimeout(750);
 assert(Math.abs(await page.evaluate(() => scrollY) - scrollBefore) <= 1, "Back did not restore the previous scroll position");
 
+// The restored position may legitimately place the footer inside the viewport,
+// where the chapter dock intentionally yields to footer content. Move to a
+// stable reading position before auditing the dock itself.
+await page.evaluate(() => window.scrollTo(0, Math.min(1100, document.documentElement.scrollHeight - innerHeight)));
+await page.waitForTimeout(180);
 const chapterNavigator = page.locator(".chapter-navigator");
 assert(await chapterNavigator.locator("button").count() > 1, "home did not expose multiple page chapters");
 assert(await chapterNavigator.evaluate((element) => element.classList.contains("is-visible") && element.getAttribute("aria-hidden") === "false"), "chapter navigator did not become available after scrolling");
