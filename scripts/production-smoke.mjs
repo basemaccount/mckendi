@@ -14,6 +14,9 @@ assert.match(home.headers.get("content-security-policy") || "", /default-src 'se
 assert.match(home.headers.get("strict-transport-security") || "", /max-age=31536000/);
 assert.equal(home.headers.get("x-content-type-options"), "nosniff");
 assert.equal(home.headers.get("x-frame-options"), "DENY");
+assert.equal(home.headers.get("cross-origin-resource-policy"), "same-origin");
+assert.equal(home.headers.get("origin-agent-cluster"), "?1");
+assert.equal(home.headers.get("x-dns-prefetch-control"), "off");
 const sitemap = await (await request("/sitemap.xml")).text();
 assert.ok(sitemap.includes(`<loc>${canonicalUrl}/contact</loc>`), "Sitemap is missing the canonical contact route");
 const robots = await (await request("/robots.txt")).text();

@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowRight,
-  Check,
   ChevronRight,
   Coffee,
   Droplets,
@@ -21,7 +20,7 @@ import {
   Wind,
   X,
 } from "lucide-react";
-import { Navigate, Route, Routes, useLocation, useNavigationType, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigationType, useParams } from "react-router";
 import ExperienceLayer from "./components/ExperienceLayer";
 import FormatLab from "./components/FormatLab";
 import InquiryProgress from "./components/InquiryProgress";
@@ -142,19 +141,20 @@ function ScrollManager() {
   const ignoreScrollEvents = useRef(false);
 
   useEffect(() => {
+    const savedPositions = positions.current;
     const previousRestoration = window.history.scrollRestoration;
     const rememberPosition = () => {
-      if (!ignoreScrollEvents.current) positions.current.set(currentKey.current, window.scrollY);
+      if (!ignoreScrollEvents.current) savedPositions.set(currentKey.current, window.scrollY);
     };
     const rememberBeforeNavigation = () => {
-      positions.current.set(currentKey.current, window.scrollY);
+      savedPositions.set(currentKey.current, window.scrollY);
       ignoreScrollEvents.current = true;
     };
     const restoreAfterCache = (event) => {
       if (!event.persisted) return;
       ignoreScrollEvents.current = false;
       document.documentElement.classList.remove("is-restoring-scroll", "route-changing");
-      positions.current.set(currentKey.current, window.scrollY);
+      savedPositions.set(currentKey.current, window.scrollY);
     };
 
     window.history.scrollRestoration = "manual";
@@ -165,7 +165,7 @@ function ScrollManager() {
     window.addEventListener("app:before-navigation", rememberBeforeNavigation);
 
     return () => {
-      positions.current.set(currentKey.current, window.scrollY);
+      savedPositions.set(currentKey.current, window.scrollY);
       window.history.scrollRestoration = previousRestoration;
       window.removeEventListener("scroll", rememberPosition);
       window.removeEventListener("pagehide", rememberPosition);
@@ -235,7 +235,7 @@ function Header({ language, setLanguage, copy }) {
   return <><header className="site-header"><Link className="brand" to="/" aria-label="Makendi.coffee home"><BrandLockup /></Link><nav className="desktop-nav" aria-label="Primary navigation">{navigationItems.map(([label, to]) => <NavLink key={to} to={to}>{label}</NavLink>)}</nav><div className="header-actions"><div className="language-switcher" aria-label={copy.language}>{["en","tr"].map((code) => <button key={code} type="button" className={language === code ? "is-active" : ""} onClick={() => setLanguage(code)} aria-pressed={language === code}>{code.toUpperCase()}</button>)}</div><Link className="button button--dark header-cta" to="/contact">{copy.inquiry}<ArrowRight aria-hidden="true" /></Link><button ref={menuButton} className="menu-button" type="button" aria-label={open ? copy.menuClose : copy.menuOpen} aria-controls="mobile-navigation" aria-expanded={open} onClick={() => setOpen((value) => !value)}>{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button></div></header><div ref={navigation} id="mobile-navigation" className={`mobile-navigation ${open ? "is-open" : ""}`} aria-hidden={!open} inert={!open ? true : undefined}><nav aria-label="Mobile navigation">{navigationItems.map(([label,to], index) => <NavLink key={to} to={to}><span>0{index + 1}</span>{label}<ArrowRight aria-hidden="true" /></NavLink>)}<NavLink to="/contact"><span>04</span>{copy.nav.contact}<ArrowRight aria-hidden="true" /></NavLink></nav><div className="mobile-navigation__note"><Coffee aria-hidden="true" /><p>{language === "tr" ? "Üç çözünebilir kahve formatı. Net bilgi. Doğrudan talep." : "Three soluble coffee formats. Clear information. Direct inquiry."}</p></div></div></>;
 }
 
-function ProductCard({ format, language, copy }) { const Icon = format.icon; return <article className="product-card"><Link className="product-card__media" to={`/products/${format.id}`}><img src={format.image} srcSet={format.srcSet} sizes="(max-width: 760px) calc(100vw - 34px), (max-width: 1100px) calc(50vw - 36px), 390px" alt={local(format.alt, language)} loading="lazy" decoding="async" width="960" height="960" style={{ viewTransitionName: `format-${format.id}` }} /><span className="product-card__number">{format.number}</span><span className="image-disclosure">{copy.imageNote}</span></Link><div className="product-card__content"><p className="eyebrow">{local(format.descriptor, language)}</p><h3><Link to={`/products/${format.id}`}>{local(format.name, language)}</Link></h3><p>{local(format.intro, language)}</p><dl><div><dt>{language === "tr" ? "Görünüm" : "Appearance"}</dt><dd>{local(format.appearance, language)}</dd></div><div><dt>{language === "tr" ? "Kullanım yönü" : "Application direction"}</dt><dd>{local(format.direction, language)}</dd></div></dl><Link className="text-link" to={`/products/${format.id}`}>{copy.view}<ArrowRight aria-hidden="true" /></Link></div></article>; }
+function ProductCard({ format, language, copy }) { return <article className="product-card"><Link className="product-card__media" to={`/products/${format.id}`}><img src={format.image} srcSet={format.srcSet} sizes="(max-width: 760px) calc(100vw - 34px), (max-width: 1100px) calc(50vw - 36px), 390px" alt={local(format.alt, language)} loading="lazy" decoding="async" width="960" height="960" style={{ viewTransitionName: `format-${format.id}` }} /><span className="product-card__number">{format.number}</span><span className="image-disclosure">{copy.imageNote}</span></Link><div className="product-card__content"><p className="eyebrow">{local(format.descriptor, language)}</p><h3><Link to={`/products/${format.id}`}>{local(format.name, language)}</Link></h3><p>{local(format.intro, language)}</p><dl><div><dt>{language === "tr" ? "Görünüm" : "Appearance"}</dt><dd>{local(format.appearance, language)}</dd></div><div><dt>{language === "tr" ? "Kullanım yönü" : "Application direction"}</dt><dd>{local(format.direction, language)}</dd></div></dl><Link className="text-link" to={`/products/${format.id}`}>{copy.view}<ArrowRight aria-hidden="true" /></Link></div></article>; }
 
 function SectionHeading({ eyebrow, title, copy }) { return <div className="section-heading"><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>{copy && <p>{copy}</p>}</div>; }
 

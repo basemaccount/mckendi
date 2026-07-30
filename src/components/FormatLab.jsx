@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { ArrowRight, Coffee, Factory } from "lucide-react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 
 const local = (value, language) => typeof value === "object" && value !== null ? value[language] : value;
 
