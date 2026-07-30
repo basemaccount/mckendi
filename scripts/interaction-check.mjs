@@ -64,11 +64,11 @@ assert(!await page.locator("html.route-changing").count(), "rapid navigation lef
 
 await page.goto(baseUrl, { waitUntil: "networkidle" });
 await page.waitForTimeout(750);
-const deferredRendering = await page.evaluate(() => ({
-  supported: CSS.supports("content-visibility: auto"),
-  values: [...document.querySelectorAll('[data-render-deferred="true"]')].map((section) => getComputedStyle(section).contentVisibility),
-}));
-assert(!deferredRendering.supported || deferredRendering.values.length > 0 && deferredRendering.values.every((value) => value === "auto"), "deep sections did not opt into native deferred rendering");
+const deepSectionRendering = await page.evaluate(() => [...document.querySelectorAll("#main-content > section")].slice(2).map((section) => ({
+  contentVisibility: getComputedStyle(section).contentVisibility,
+  height: section.getBoundingClientRect().height,
+})));
+assert(deepSectionRendering.length > 0 && deepSectionRendering.every(({ contentVisibility, height }) => contentVisibility === "visible" && height > 100), "deep sections were deferred or collapsed into blank placeholders");
 await page.mouse.wheel(0, 3600);
 await page.waitForTimeout(100);
 const scrollBefore = await page.evaluate(() => scrollY);
@@ -275,5 +275,5 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exitCode = 1;
 } else {
-  console.log(`Interaction checks passed: ${routes.length} direct loads/reloads, keyboard, modified and current-route clicks, rapid navigation, deep history restoration, deferred rendering, responsive chapters, inquiry readiness, BFCache/offline/storage recovery, reduced motion, lab preload/interruption safety, mobile touch targets, and transition failure recovery.`);
+  console.log(`Interaction checks passed: ${routes.length} direct loads/reloads, keyboard, modified and current-route clicks, rapid navigation, deep history restoration, stable deep-section rendering, responsive chapters, inquiry readiness, BFCache/offline/storage recovery, reduced motion, lab preload/interruption safety, mobile touch targets, and transition failure recovery.`);
 }

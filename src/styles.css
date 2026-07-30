@@ -548,8 +548,11 @@ a.contact-channel:hover { border-color: rgba(239,201,121,.52); background: rgba(
   .process-steps li:nth-child(n + 2) { border-top: 0; }
   .process-steps li > svg { margin-top: 39px; }
   .route-grid a { min-height: 280px; padding: 25px; }
-  .application-grid { grid-template-columns: 1fr; }
-  .application-grid article { min-height: 250px; padding: 26px; }
+  .application-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+  .application-grid article { min-height: 228px; padding: 17px 15px; }
+  .application-grid svg { width: 22px; height: 22px; margin-top: 27px; }
+  .application-grid h2 { margin-top: 12px; font-size: clamp(23px, 7vw, 28px); line-height: 1.05; }
+  .application-grid p { margin-top: 10px; font-size: 11px; line-height: 1.55; }
   .application-questions h2 { font-size: 45px; }
   .application-questions li { align-items: flex-start; padding-block: 16px; font-size: 19px; }
   .contact-card, .form-panel { padding: 26px 21px; }
@@ -570,6 +573,34 @@ a.contact-channel:hover { border-color: rgba(239,201,121,.52); background: rgba(
   .footer-grid { grid-template-columns: 1fr; gap: 34px; }
   .footer-grid > div > a, .footer-grid > div > span { min-width: 44px; min-height: 44px; }
   .footer-base { flex-direction: column; gap: 10px; }
+}
+
+@media (min-width: 361px) and (max-width: 520px) {
+  .hero + .format-ribbon + .format-lab + .section.shell { overflow: hidden; }
+  .hero + .format-ribbon + .format-lab + .section.shell .product-grid {
+    width: calc(100vw - 17px);
+    display: flex;
+    gap: 12px;
+    padding: 2px 17px 18px 0;
+    overflow-x: auto;
+    scroll-padding-inline: 0 17px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
+  }
+  .hero + .format-ribbon + .format-lab + .section.shell .product-grid::-webkit-scrollbar { display: none; }
+  .hero + .format-ribbon + .format-lab + .section.shell .product-card {
+    width: min(82vw, 318px);
+    max-width: none;
+    flex: 0 0 min(82vw, 318px);
+    scroll-snap-align: start;
+  }
+  .hero + .format-ribbon + .format-lab + .section.shell .product-card__media img { aspect-ratio: 1.08; }
+}
+
+@media (max-width: 360px) {
+  .application-grid { grid-template-columns: 1fr; }
+  .application-grid article { min-height: 220px; padding: 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

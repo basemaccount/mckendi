@@ -126,7 +126,6 @@ export default function ExperienceLayer({ language }) {
       const generatedId = !section.id;
       if (generatedId) section.id = `chapter-${routeKey}-${String(index + 1).padStart(2, "0")}`;
       if (generatedId) section.dataset.experienceChapterId = "true";
-      if (index >= 2) section.dataset.renderDeferred = "true";
       return { id: section.id, label, number: index + 1 };
     });
 
@@ -154,7 +153,6 @@ export default function ExperienceLayer({ language }) {
       chapterObserver?.disconnect();
       footerObserver?.disconnect();
       sectionNodes.forEach((section) => {
-        delete section.dataset.renderDeferred;
         if (section.dataset.experienceChapterId === "true") {
           section.removeAttribute("id");
           delete section.dataset.experienceChapterId;
