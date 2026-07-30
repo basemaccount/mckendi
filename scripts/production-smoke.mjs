@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-const baseUrl = String(process.env.MCKENDI_BASE_URL || "https://mckendi.vercel.app").replace(/\/$/, "");
+const baseUrl = String(process.env.MCKENDI_BASE_URL || "https://makendi-coffee.vercel.app").replace(/\/$/, "");
 const canonicalUrl = String(process.env.MCKENDI_CANONICAL_URL || "https://makendi.coffee").replace(/\/$/, "");
 const routes = ["/", "/products", "/products/spray-dried", "/products/agglomerated", "/products/freeze-dried", "/process", "/applications", "/contact", "/privacy"];
 async function request(path) {
