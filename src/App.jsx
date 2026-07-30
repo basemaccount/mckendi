@@ -28,7 +28,7 @@ import InquiryProgress from "./components/InquiryProgress";
 import { Link, NavLink } from "./components/TransitionLink";
 import { usePersistentState } from "./hooks/usePersistentState";
 
-const SITE_URL = String(import.meta.env.VITE_PUBLIC_SITE_URL || "https://mckendi.vercel.app").replace(/\/$/, "");
+const SITE_URL = String(import.meta.env.VITE_PUBLIC_SITE_URL || "https://makendi.coffee").replace(/\/$/, "");
 const CONTACT_EMAIL = String(import.meta.env.VITE_CONTACT_EMAIL || "info@makendi.com").trim();
 const CONTACT_PHONE = "+90 216 340 70 28";
 const CONTACT_PHONE_HREF = "+902163407028";
@@ -207,7 +207,7 @@ function ScrollManager() {
 }
 
 function BrandLockup({ footer = false }) {
-  return <span className={`brand-lockup ${footer ? "brand-lockup--footer" : ""}`}><span className="brand-lockup__sun" aria-hidden="true"><i /></span><span className="brand-lockup__name"><strong>Makendi</strong><em>.coffee</em><small>Real coffee experience</small></span></span>;
+  return <span className={`brand-lockup ${footer ? "brand-lockup--footer" : ""}`}><span className="brand-lockup__mark" aria-hidden="true"><picture><source type="image/webp" srcSet="/makendi-logo-240.webp 240w, /makendi-logo-480.webp 480w" sizes="56px" /><img src="/makendi-logo.png" alt="" width="720" height="225" decoding="async" /></picture></span><span className="brand-lockup__name"><strong>Makendi</strong><em>.coffee</em><small>Real coffee experience</small></span></span>;
 }
 
 function Header({ language, setLanguage, copy }) {

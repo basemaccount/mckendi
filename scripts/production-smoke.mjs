@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 const baseUrl = String(process.env.MCKENDI_BASE_URL || "https://mckendi.vercel.app").replace(/\/$/, "");
-const canonicalUrl = String(process.env.MCKENDI_CANONICAL_URL || baseUrl).replace(/\/$/, "");
+const canonicalUrl = String(process.env.MCKENDI_CANONICAL_URL || "https://makendi.coffee").replace(/\/$/, "");
 const routes = ["/", "/products", "/products/spray-dried", "/products/agglomerated", "/products/freeze-dried", "/process", "/applications", "/contact", "/privacy"];
 async function request(path) {
   const response = await fetch(`${baseUrl}${path}`, { redirect: "follow", signal: AbortSignal.timeout(12_000) });

@@ -46,6 +46,8 @@ for (const check of checks) {
   if (check.name === "desktop-home") {
     const brandLockup = page.locator(".brand-lockup").first();
     if (!(await brandLockup.isVisible()) || !(await brandLockup.textContent())?.includes("Makendi.coffee")) failures.push("desktop-home: Makendi.coffee brand lockup was missing");
+    if (!(await page.locator('.brand-lockup__mark img[src="/makendi-logo.png"]').first().isVisible())) failures.push("desktop-home: approved Makendi logo mark was missing");
+    if ((await page.locator(".brand-lockup__sun").count()) !== 0) failures.push("desktop-home: retired placeholder emblem remained");
     if ((await page.getByText(/Mckendi/i).count()) !== 0) failures.push("desktop-home: retired Mckendi spelling remained visible");
     if ((await page.locator(".image-disclosure, .hero__image-note").count()) !== 4) failures.push("desktop-home: temporary AI images were not fully disclosed");
     const englishHeading = await page.locator("h1").textContent();

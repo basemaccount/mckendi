@@ -129,6 +129,8 @@ assert(await fallbackLabButtons.nth(1).getAttribute("aria-pressed") === "true", 
 
 await page.goto(`${baseUrl}/contact`, { waitUntil: "networkidle" });
 assert((await page.locator(".brand-lockup").first().textContent()).includes("Makendi.coffee"), "new Makendi.coffee brand was not visible in the persistent shell");
+assert(await page.locator('.brand-lockup__mark img[src="/makendi-logo.png"]').first().isVisible(), "approved Makendi logo mark was not visible in the persistent shell");
+assert(await page.locator(".brand-lockup__sun").count() === 0, "retired placeholder emblem remained in the persistent shell");
 assert((await page.title()).includes("Makendi.coffee"), "contact metadata retained the old brand name");
 assert(await page.locator('.contact-channels a[href="mailto:info@makendi.com"]').count() === 1, "confirmed contact email was not published");
 assert(await page.locator('.contact-channels a[href="tel:+902163407028"]').count() === 1, "confirmed contact telephone was not callable");

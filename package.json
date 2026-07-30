@@ -32,7 +32,6 @@
     "@napi-rs/canvas": "^1.0.2",
     "@playwright/test": "^1.61.1",
     "@vitejs/plugin-react": "^6.0.3",
-    "pdfjs-dist": "^6.1.200",
     "vite": "^8.1.5"
   }
 }
