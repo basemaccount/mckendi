@@ -26,6 +26,23 @@ for (const route of routes) {
 }
 
 await page.goto(baseUrl, { waitUntil: "networkidle" });
+const discoveryTrigger = page.getByRole("button", { name: "Open quick discovery" });
+await discoveryTrigger.click();
+assert(await page.locator(".discovery-deck").evaluate((dialog) => dialog.open), "format finder did not open as a modal dialog");
+await page.getByPlaceholder("Search format, structure, process or page…").fill("freeze");
+assert(await page.locator('.discovery-deck__results a[href="/products/freeze-dried"]').count() === 1, "format finder did not find freeze-dried coffee");
+await page.locator('.discovery-deck__results a[href="/products/freeze-dried"]').click();
+await page.waitForURL("**/products/freeze-dried");
+await page.goto(baseUrl, { waitUntil: "networkidle" });
+await page.getByRole("button", { name: "Open quick discovery" }).click();
+const motionControl = page.locator(".discovery-deck__footer > button");
+await motionControl.click();
+assert(await page.locator("html").getAttribute("data-motion") === "calm", "format finder did not apply calm-motion mode");
+await motionControl.click();
+await page.keyboard.press("Escape");
+assert(await discoveryTrigger.evaluate((element) => document.activeElement === element), "format finder did not restore focus to its trigger");
+
+await page.goto(baseUrl, { waitUntil: "networkidle" });
 const keyboardLink = page.locator('.desktop-nav a[href="/products"]');
 await keyboardLink.focus();
 await page.keyboard.press("Enter");
