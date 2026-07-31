@@ -97,6 +97,7 @@ export default function DiscoveryDeck({ language = "en", formats = [], openReque
   useEffect(() => {
     if (!openRequest) return;
     triggerRef.current = openRequest.trigger || document.activeElement;
+    triggerRef.current?.setAttribute?.("aria-expanded", "true");
     setOpen(true);
   }, [openRequest]);
 
@@ -126,7 +127,7 @@ export default function DiscoveryDeck({ language = "en", formats = [], openReque
   const focusResult = (index) => resultRefs.current[Math.max(0, Math.min(results.length - 1, index))]?.focus();
 
   return (
-    <dialog ref={dialogRef} className="discovery-deck" data-updating={isSearching ? "true" : "false"} aria-labelledby="discovery-title" onCancel={(event) => { event.preventDefault(); close(); }} onClose={() => { setOpen(false); document.body.classList.remove("discovery-open"); triggerRef.current?.focus?.({ preventScroll: true }); }} onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
+    <dialog id="discovery-dialog" ref={dialogRef} className="discovery-deck" data-updating={isSearching ? "true" : "false"} aria-labelledby="discovery-title" onCancel={(event) => { event.preventDefault(); close(); }} onClose={() => { setOpen(false); document.body.classList.remove("discovery-open"); triggerRef.current?.setAttribute?.("aria-expanded", "false"); triggerRef.current?.removeAttribute?.("aria-busy"); triggerRef.current?.classList?.remove("is-loading"); triggerRef.current?.focus?.({ preventScroll: true }); }} onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
       <div className="discovery-deck__surface">
         <header className="discovery-deck__header"><div><span><Sparkles aria-hidden="true" />{language === "tr" ? "Makendi format bulucu" : "Makendi format finder"}</span><h2 id="discovery-title">{language === "tr" ? "Doğru bilgiye tek adımda ulaşın." : "Reach the right information in one step."}</h2></div><button type="button" className="discovery-deck__close" onClick={close} aria-label={language === "tr" ? "Keşif panelini kapat" : "Close discovery deck"}><X aria-hidden="true" /></button></header>
         <div className="discovery-deck__search" data-active={query ? "true" : "false"}><Search aria-hidden="true" /><label className="sr-only" htmlFor="discovery-search-input">{language === "tr" ? "Makendi.coffee'de ara" : "Search Makendi.coffee"}</label><input id="discovery-search-input" ref={inputRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "ArrowDown") { event.preventDefault(); focusResult(0); } }} placeholder={language === "tr" ? "Format, yapı, proses veya sayfa ara…" : "Search format, structure, process or page…"} autoComplete="off" autoCapitalize="none" spellCheck="false" enterKeyHint="search" aria-controls="discovery-results" aria-describedby="discovery-result-status" /><span className="discovery-deck__search-actions">{query && <button type="button" onClick={() => { setQuery(""); inputRef.current?.focus(); }} aria-label={language === "tr" ? "Aramayı temizle" : "Clear search"}><X aria-hidden="true" /></button>}<kbd>⌘ K</kbd></span><span className="discovery-deck__search-progress" aria-hidden="true" /></div>
