@@ -1,7 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { useLocation } from "react-router";
-import DiscoveryDeck from "./DiscoveryDeck";
+
+const loadDiscoveryDeck = () => import("./DiscoveryDeck");
+const DiscoveryDeck = lazy(loadDiscoveryDeck);
 
 const REVEAL_SELECTOR = [
   ".format-ribbon .shell > a",
@@ -36,7 +38,27 @@ export default function ExperienceLayer({ language, formats }) {
   const [activeChapterId, setActiveChapterId] = useState("");
   const [routeAnnouncement, setRouteAnnouncement] = useState("");
   const [connectionNotice, setConnectionNotice] = useState(null);
+  const [discoveryRequest, setDiscoveryRequest] = useState(null);
   const frame = useRef(0);
+
+  useEffect(() => {
+    const show = (event) => setDiscoveryRequest({ id: window.performance.now(), trigger: event.detail?.trigger || document.activeElement });
+    const preload = () => { void loadDiscoveryDeck(); };
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); show(event); }
+      else if (!editing && event.key === "/") { event.preventDefault(); show(event); }
+    };
+    window.addEventListener("app:open-discovery", show);
+    window.addEventListener("app:preload-discovery", preload);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("app:open-discovery", show);
+      window.removeEventListener("app:preload-discovery", preload);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     const nativeScrollTimeline = window.CSS?.supports?.("animation-timeline: scroll(root block)") ?? false;
@@ -269,7 +291,7 @@ export default function ExperienceLayer({ language, formats }) {
 
   return (
     <>
-      <DiscoveryDeck language={language} formats={formats} />
+      {discoveryRequest && <Suspense fallback={null}><DiscoveryDeck language={language} formats={formats} openRequest={discoveryRequest} /></Suspense>}
       <p className="experience-announcer" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
       {connectionNotice && <div className={`connection-notice is-${connectionNotice}`} role="status" aria-live="polite"><span aria-hidden="true" /><div><strong>{language === "tr" ? connectionNotice === "offline" ? "Bağlantı kesildi" : "Bağlantı yeniden kuruldu" : connectionNotice === "offline" ? "You’re offline" : "Connection restored"}</strong><small>{language === "tr" ? connectionNotice === "offline" ? "Bazı görseller ve talep gönderimi kullanılamayabilir." : "Gezinmeye ve talep göndermeye devam edebilirsiniz." : connectionNotice === "offline" ? "Some images and inquiry submission may be unavailable." : "You can continue browsing and submit an inquiry."}</small></div></div>}
       <div className="route-loader" aria-hidden="true"><span /></div>

@@ -27,9 +27,20 @@ for (const route of routes) {
 
 await page.goto(baseUrl, { waitUntil: "networkidle" });
 const discoveryTrigger = page.getByRole("button", { name: "Open quick discovery" });
+assert(await page.locator(".discovery-deck").count() === 0, "format finder was downloaded and mounted before search intent");
 await discoveryTrigger.click();
 assert(await page.locator(".discovery-deck").evaluate((dialog) => dialog.open), "format finder did not open as a modal dialog");
-await page.getByPlaceholder("Search format, structure, process or page…").fill("freeze");
+const discoveryInput = page.getByPlaceholder("Search format, structure, process or page…");
+assert(await discoveryInput.evaluate((element) => document.activeElement === element), "format finder did not focus its search input");
+assert(await page.locator(".discovery-deck__quick-picks button").count() === 3, "format finder did not expose all three quick filters");
+await page.locator(".discovery-deck__quick-picks button").first().click();
+assert((await discoveryInput.inputValue()).toLowerCase().includes("spray"), "format quick filter did not update the query");
+await page.getByRole("button", { name: "Clear search" }).click();
+assert(await discoveryInput.inputValue() === "", "format clear control did not reset the query");
+await discoveryInput.fill("freeze");
+await page.locator('.discovery-deck__results a[href="/products/freeze-dried"]').waitFor();
+await page.waitForFunction(() => document.querySelector(".discovery-deck__results")?.getAttribute("aria-busy") === "false");
+assert(await page.locator(".discovery-deck__results").getAttribute("aria-busy") === "false", "format results remained busy after deferred filtering");
 assert(await page.locator('.discovery-deck__results a[href="/products/freeze-dried"]').count() === 1, "format finder did not find freeze-dried coffee");
 await page.locator('.discovery-deck__results a[href="/products/freeze-dried"]').click();
 await page.waitForURL("**/products/freeze-dried");
@@ -41,6 +52,22 @@ assert(await page.locator("html").getAttribute("data-motion") === "calm", "forma
 await motionControl.click();
 await page.keyboard.press("Escape");
 assert(await discoveryTrigger.evaluate((element) => document.activeElement === element), "format finder did not restore focus to its trigger");
+
+const discoveryMobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+const discoveryMobile = await discoveryMobileContext.newPage();
+await discoveryMobile.goto(baseUrl, { waitUntil: "networkidle" });
+await discoveryMobile.keyboard.press("Control+k");
+await discoveryMobile.getByPlaceholder("Search format, structure, process or page…").fill("freeze");
+await discoveryMobile.getByRole("button", { name: "Clear search" }).waitFor();
+await discoveryMobile.waitForTimeout(240);
+const mobileClearBounds = await discoveryMobile.getByRole("button", { name: "Clear search" }).boundingBox();
+const mobileChipBounds = await discoveryMobile.locator(".discovery-deck__quick-picks button").first().boundingBox();
+assert(mobileClearBounds?.width >= 43.5 && mobileClearBounds?.height >= 43.5, "format mobile clear control was smaller than 44px");
+assert(mobileChipBounds?.height >= 43.5, "format mobile quick filter was smaller than 44px");
+assert(await discoveryMobile.locator(".discovery-deck").evaluate((dialog) => getComputedStyle(dialog, "::backdrop").backdropFilter === "none"), "format mobile backdrop retained an expensive blur filter");
+assert(await discoveryMobile.evaluate(() => document.documentElement.scrollWidth === document.documentElement.clientWidth), "format finder overflowed on mobile");
+assert((await discoveryMobile.locator(".discovery-deck__results > a").first().evaluate((element) => getComputedStyle(element).animationName)).includes("mobile"), "format results did not use the mobile motion treatment");
+await discoveryMobileContext.close();
 
 await page.goto(baseUrl, { waitUntil: "networkidle" });
 const keyboardLink = page.locator('.desktop-nav a[href="/products"]');
